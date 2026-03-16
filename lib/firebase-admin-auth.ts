@@ -7,8 +7,21 @@ let authApp: admin.app.App;
 
 if (!admin.apps.find((app) => app?.name === AUTH_APP_NAME)) {
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const clientEmail = process.env.FIREBASE_AUTH_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_AUTH_PRIVATE_KEY;
 
-  if (serviceAccount) {
+  if (clientEmail && privateKey) {
+    authApp = admin.initializeApp(
+      {
+        credential: admin.credential.cert({
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          clientEmail,
+          privateKey: privateKey.replace(/\\n/g, '\n'),
+        }),
+      },
+      AUTH_APP_NAME
+    );
+  } else if (serviceAccount) {
     authApp = admin.initializeApp(
       {
         credential: admin.credential.cert(JSON.parse(serviceAccount)),
