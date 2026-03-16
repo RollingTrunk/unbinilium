@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
+import { getSessionFromRequest } from "@/lib/auth-helpers";
 
 export async function POST(req: Request) {
   try {
+    try {
+      await getSessionFromRequest(req);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { userId, title, body } = await req.json();
 
     if (!userId || !title || !body) {

@@ -1,16 +1,15 @@
 import * as admin from "firebase-admin";
 
-if (!admin.apps.length) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-    : undefined;
+const serviceAccount = process.env.NODE_ENV === "development" ? process.env.DEV_FIREBASE_SERVICE_ACCOUNT : process.env.PROD_FIREBASE_SERVICE_ACCOUNT;
 
+const isDefaultInitialized = admin.apps.some(app => app?.name === "[DEFAULT]");
+
+if (!isDefaultInitialized) {
   if (serviceAccount) {
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: admin.credential.cert(JSON.parse(serviceAccount)),
     });
   } else {
-    // Falls back to Application Default Credentials
     admin.initializeApp({
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     });

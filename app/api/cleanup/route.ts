@@ -1,8 +1,14 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
+import { getSessionFromRequest } from "@/lib/auth-helpers";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    try {
+      await getSessionFromRequest(req);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const report: any = {
       orphanedMembers: 0,
       orphanedRecords: 0,
@@ -35,8 +41,13 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    try {
+      await getSessionFromRequest(req);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     let count = 0;
 
     const accountsSnapshot = await adminDb.collection("accounts").get();

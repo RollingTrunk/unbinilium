@@ -1,12 +1,18 @@
-import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { admin, adminAuth, adminDb } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
+import { getSessionFromRequest } from "@/lib/auth-helpers";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    try {
+      await getSessionFromRequest(req);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { id } = await params;
     const { status } = await req.json();
 
     if (status === "deactivated") {
@@ -18,29 +24,34 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating user status:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
   }
 }
 
-async function deleteQueryInBatches(query: any) {
+async function deleteQueryInBatches(query: admin.firestore.Query) {
   const snapshot = await query.get();
   const docs = snapshot.docs;
   for (let i = 0; i < docs.length; i += 500) {
     const chunk = docs.slice(i, i + 500);
     const batch = adminDb.batch();
-    chunk.forEach((doc: any) => batch.delete(doc.ref));
+    chunk.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
   }
 }
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    try {
+      await getSessionFromRequest(req);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { id } = await params;
 
     // Delete related data in safe 500 batches
     await deleteQueryInBatches(adminDb.collection("accountMembers").where("userId", "==", id));
@@ -58,8 +69,8 @@ export async function DELETE(
     await adminAuth.deleteUser(id);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error deleting user:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
   }
 }

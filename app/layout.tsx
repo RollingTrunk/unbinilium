@@ -1,5 +1,4 @@
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import { AuthProvider } from "@/components/AuthContext";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -22,15 +21,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased text-white`}>
-        <div className="flex bg-background min-h-screen">
-          <Sidebar />
-          <div className="flex-1 ml-64 flex flex-col">
-            <Navbar />
-            <main className="flex-1 p-8">
-              {children}
-            </main>
-          </div>
-        </div>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

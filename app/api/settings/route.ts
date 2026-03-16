@@ -1,10 +1,16 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
+import { getSessionFromRequest } from "@/lib/auth-helpers";
 
 const SETTINGS_DOC = "config/global";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    try {
+      await getSessionFromRequest(req);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const doc = await adminDb.doc(SETTINGS_DOC).get();
     
     // Provide defaults if the doc doesn't exist yet
@@ -27,6 +33,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    try {
+      await getSessionFromRequest(req);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const updates = await req.json();
     
     // Do not overwrite secret if client sends empty string

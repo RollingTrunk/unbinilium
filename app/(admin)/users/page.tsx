@@ -2,19 +2,19 @@
 
 import { format } from "date-fns";
 import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Lock,
-  Mail,
-  MoreVertical,
-  Search,
-  Shield,
-  ShieldAlert,
-  Trash2,
-  Unlock,
-  User as UserIcon,
-  Users
+    Calendar,
+    ChevronLeft,
+    ChevronRight,
+    Lock,
+    Mail,
+    MoreVertical,
+    Search,
+    Shield,
+    ShieldAlert,
+    Trash2,
+    Unlock,
+    User as UserIcon,
+    Users
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -26,9 +26,11 @@ interface User {
   photoURL?: string;
   createdAt?: any;
   lastLogin?: any;
-  status?: "active" | "deactivated";
+  status?: "active" | "deactivated" | "inactive" | "deleted";
   role?: "user" | "admin";
 }
+
+const webURL = process.env.NODE_ENV === "development" ? process.env.NEXT_PUBLIC_DEV_EXPO_WEB_URL : process.env.NEXT_PUBLIC_PROD_EXPO_WEB_URL;
 
 const formatDate = (dateObj: any, formatStr: string) => {
   if (!dateObj) return "Unknown";
@@ -95,8 +97,7 @@ export default function UsersPage() {
       const data = await res.json();
       
       if (data.token) {
-        const webUrl = process.env.NEXT_PUBLIC_EXPO_WEB_URL || 'https://hest-server.web.app';
-        window.open(`${webUrl}/?token=${data.token}`, '_blank');
+        window.open(`${webURL}/?token=${data.token}`, '_blank');
       } else {
         alert("Failed to generate impersonation token. Make sure the service account is configured.");
       }
@@ -211,11 +212,13 @@ export default function UsersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.status === "deactivated" 
+                          user.status === "deactivated" || user.status === "inactive" || user.status === "deleted"
                             ? "bg-red-500/10 text-red-500 border border-red-500/20" 
                             : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                         }`}>
-                          {user.status === "deactivated" ? "Deactivated" : "Active"}
+                          {user.status === "deactivated" ? "Deactivated" : 
+                           user.status === "inactive" ? "Inactive" :
+                           user.status === "deleted" ? "Deleted" : "Active"}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-400">

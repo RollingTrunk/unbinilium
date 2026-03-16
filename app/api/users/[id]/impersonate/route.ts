@@ -1,12 +1,18 @@
 import { adminAuth } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
+import { getSessionFromRequest } from "@/lib/auth-helpers";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = params.id;
+    try {
+      await getSessionFromRequest(request);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { id: userId } = await params;
 
     if (!userId) {
       return NextResponse.json(
