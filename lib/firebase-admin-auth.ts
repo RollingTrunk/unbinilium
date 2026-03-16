@@ -6,15 +6,16 @@ const AUTH_APP_NAME = "hest-admin-auth-app";
 let authApp: admin.app.App;
 
 if (!admin.apps.find((app) => app?.name === AUTH_APP_NAME)) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
-  const clientEmail = process.env.FIREBASE_AUTH_CLIENT_EMAIL;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = `firebase-adminsdk-fbsvc@${projectId}.iam.gserviceaccount.com`;
   const privateKey = process.env.FIREBASE_AUTH_PRIVATE_KEY;
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-  if (clientEmail && privateKey) {
+  if (clientEmail && privateKey && projectId) {
     authApp = admin.initializeApp(
       {
         credential: admin.credential.cert({
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          projectId,
           clientEmail,
           privateKey: privateKey.replace(/\\n/g, '\n'),
         }),
@@ -31,7 +32,7 @@ if (!admin.apps.find((app) => app?.name === AUTH_APP_NAME)) {
   } else {
     authApp = admin.initializeApp(
       {
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        projectId,
       },
       AUTH_APP_NAME
     );

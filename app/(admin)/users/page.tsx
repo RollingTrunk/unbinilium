@@ -30,7 +30,8 @@ interface User {
   role?: "user" | "admin";
 }
 
-const webURL = process.env.NODE_ENV === "development" ? process.env.NEXT_PUBLIC_DEV_EXPO_WEB_URL : process.env.NEXT_PUBLIC_PROD_EXPO_WEB_URL;
+const projectId = process.env.NODE_ENV === "development" ? process.env.DEV_FIREBASE_PROJECT_ID : process.env.PROD_FIREBASE_PROJECT_ID;
+const webURL = `https://${projectId}.web.app`;
 
 const formatDate = (dateObj: any, formatStr: string) => {
   if (!dateObj) return "Unknown";
