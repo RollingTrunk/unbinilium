@@ -16,7 +16,7 @@ import {
     User as UserIcon,
     Users
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface User {
   id: string;
@@ -24,8 +24,8 @@ interface User {
   name?: string;
   displayName?: string;
   photoURL?: string;
-  createdAt?: any;
-  lastLogin?: any;
+  createdAt?: { _seconds?: number; seconds?: number; nanoseconds?: number } | string | number | Date;
+  lastLogin?: { _seconds?: number; seconds?: number; nanoseconds?: number } | string | number | Date;
   status?: "active" | "deactivated" | "inactive" | "deleted";
   role?: "user" | "admin";
 }
@@ -50,23 +50,51 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  
+  // Pagination state
+  const cursorsRef = useRef<(string | null)[]>([null]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const limit = 20;
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(0);
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (pageIndex: number) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/users?limit=20");
+      const cursor = cursorsRef.current[pageIndex];
+      const res = await fetch(`/api/users?limit=${limit}${cursor ? `&cursor=${cursor}` : ""}`);
       const data = await res.json();
+      
       if (data.users) {
         setUsers(data.users);
+        setHasMore(data.hasMore);
+        
+        // Update cursors for next page if we don't have it yet
+        if (data.lastVisible && pageIndex + 1 >= cursorsRef.current.length) {
+          cursorsRef.current.push(data.lastVisible);
+        }
+        
+        setCurrentPage(pageIndex);
       }
     } catch (error) {
       console.error("Failed to fetch users", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (hasMore) {
+      fetchUsers(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 0) {
+      fetchUsers(currentPage - 1);
     }
   };
 
@@ -237,12 +265,22 @@ export default function UsersPage() {
           </div>
           
           <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
-            <span className="text-sm text-gray-500">Showing {filteredUsers.length} users</span>
+            <span className="text-sm text-gray-500">
+              Showing page {currentPage + 1}
+            </span>
             <div className="flex items-center space-x-2">
-              <button className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-500 disabled:opacity-50" disabled>
+              <button 
+                className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-500 disabled:opacity-50" 
+                onClick={handlePrevPage}
+                disabled={currentPage === 0 || loading}
+              >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-500 disabled:opacity-50" disabled>
+              <button 
+                className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-500 disabled:opacity-50" 
+                onClick={handleNextPage}
+                disabled={!hasMore || loading}
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -349,7 +387,7 @@ export default function UsersPage() {
               </div>
             </div>
           ) : (
-            <div className="glass-panel border-dashed border-2 border-white/5 rounded-3xl h-full min-h-[400px] flex flex-col items-center justify-center p-8 text-center">
+            <div className="glass-panel border-dashed border-2 border-white/5 rounded-3xl min-h-[400px] flex flex-col items-center justify-center p-8 text-center">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
                 <UserIcon className="w-8 h-8 text-gray-600" />
               </div>

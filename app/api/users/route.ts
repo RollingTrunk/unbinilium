@@ -11,20 +11,35 @@ export async function GET(req: Request) {
     }
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "50");
+    const cursor = searchParams.get("cursor");
     
-    // In a real scenario, we might need pagination.
-    // For now, we fetch the most recent users.
-    const usersSnapshot = await adminDb.collection("users")
+    let query = adminDb.collection("users")
       .orderBy("createdAt", "desc")
-      .limit(limit)
-      .get();
+      .limit(limit);
+
+    if (cursor) {
+      const cursorDoc = await adminDb.collection("users").doc(cursor).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc);
+      }
+    }
+
+    const usersSnapshot = await query.get();
       
     const users = usersSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
-    return NextResponse.json({ users });
+    const lastVisible = usersSnapshot.docs.length > 0 
+      ? usersSnapshot.docs[usersSnapshot.docs.length - 1].id 
+      : null;
+
+    return NextResponse.json({ 
+      users,
+      lastVisible,
+      hasMore: users.length === limit
+    });
   } catch (error: unknown) {
     console.error("Error fetching users:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
