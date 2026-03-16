@@ -6,7 +6,7 @@ const AUTH_APP_NAME = "hest-admin-auth-app";
 let authApp: admin.app.App;
 
 if (!admin.apps.find((app) => app?.name === AUTH_APP_NAME)) {
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = `firebase-adminsdk-fbsvc@${projectId}.iam.gserviceaccount.com`;
   const privateKey = process.env.FIREBASE_AUTH_PRIVATE_KEY;
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
