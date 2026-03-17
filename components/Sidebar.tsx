@@ -2,9 +2,9 @@
 
 import {
     Bell,
+    Building,
     Database,
     LayoutDashboard,
-    Settings,
     Users
 } from "lucide-react";
 import Link from "next/link";
@@ -13,9 +13,9 @@ import { usePathname } from "next/navigation";
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Users", href: "/users", icon: Users },
+  { name: "Accounts", href: "/accounts", icon: Building },
   { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Cleanup", href: "/cleanup", icon: Database },
-  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export default function Sidebar() {

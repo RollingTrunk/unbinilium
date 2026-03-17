@@ -1,6 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
+import { formatDate } from "@/lib/date-utils";
 import {
     Calendar,
     ChevronLeft,
@@ -14,9 +14,12 @@ import {
     Trash2,
     Unlock,
     User as UserIcon,
-    Users
+    Users,
+    Building
 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 interface User {
   id: string;
@@ -33,24 +36,25 @@ interface User {
 const projectId = process.env.NODE_ENV === "development" ? process.env.DEV_FIREBASE_PROJECT_ID : process.env.PROD_FIREBASE_PROJECT_ID;
 const webURL = `https://${projectId}.web.app`;
 
-const formatDate = (dateObj: any, formatStr: string) => {
-  if (!dateObj) return "Unknown";
-  try {
-    const d = dateObj._seconds ? new Date(dateObj._seconds * 1000) : 
-              dateObj.seconds ? new Date(dateObj.seconds * 1000) : 
-              new Date(dateObj);
-    if (isNaN(d.getTime())) return "Unknown";
-    return format(d, formatStr);
-  } catch (e) {
-    return "Unknown";
-  }
-};
 
 export default function UsersPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <UsersPageContent />
+    </Suspense>
+  );
+}
+
+function UsersPageContent() {
+  const searchParams = useSearchParams();
+  const urlUserId = searchParams.get("userId");
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userAccount, setUserAccount] = useState<{id: string, name?: string} | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   
   // Pagination state
   const cursorsRef = useRef<(string | null)[]>([null]);
@@ -61,6 +65,47 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers(0);
   }, []);
+
+  useEffect(() => {
+    if (urlUserId) {
+      fetchUserDetails(urlUserId);
+    }
+  }, [urlUserId]);
+
+  const fetchUserDetails = async (id: string, locallySelected?: User) => {
+    setLoadingDetails(true);
+    setUserAccount(null);
+    let user = locallySelected;
+
+    if (!user) {
+      try {
+        const res = await fetch(`/api/users/${id}`);
+        const data = await res.json();
+        if (data.user) {
+          user = data.user;
+          setSelectedUser(user!);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user details", error);
+      }
+    }
+
+    if (user) {
+      try {
+        const res = await fetch(`/api/users/${id}/account`);
+        const data = await res.json();
+        if (data.account) {
+          setUserAccount(data.account);
+        } else {
+          setUserAccount(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user account", error);
+        setUserAccount(null);
+      }
+    }
+    setLoadingDetails(false);
+  };
 
   const fetchUsers = async (pageIndex: number) => {
     setLoading(true);
@@ -222,7 +267,13 @@ export default function UsersPage() {
                     <tr 
                       key={user.id} 
                       className={`hover:bg-white/5 transition-colors cursor-pointer ${selectedUser?.id === user.id ? 'bg-white/5' : ''}`}
-                      onClick={() => setSelectedUser(user)}
+                      onClick={() => {
+                        if (selectedUser?.id !== user.id) {
+                          window.history.replaceState(null, '', `?userId=${user.id}`);
+                          setSelectedUser(user);
+                          fetchUserDetails(user.id, user);
+                        }
+                      }}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
@@ -292,6 +343,11 @@ export default function UsersPage() {
         <div className="space-y-6">
           {selectedUser ? (
             <div className="glass-panel rounded-3xl border border-white/10 p-6 sticky top-6">
+              {loadingDetails && (
+                <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-3xl flex items-center justify-center z-10">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              )}
               <div className="flex items-center space-x-4 mb-6">
                 {selectedUser.photoURL ? (
                   <img src={selectedUser.photoURL} alt="" className="w-16 h-16 rounded-2xl border border-white/10" />
@@ -319,6 +375,12 @@ export default function UsersPage() {
                   <Shield className="w-4 h-4" />
                   <span className="text-sm uppercase font-bold text-xs tracking-wider">{selectedUser.id.substring(0, 12)}...</span>
                 </div>
+                {userAccount && (
+                  <Link href={`/accounts?accountId=${userAccount.id}`} className="flex items-center space-x-3 text-gray-400 hover:text-blue-400 transition-colors group">
+                    <Building className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm font-medium">{userAccount.name || "Unnamed Account"}</span>
+                  </Link>
+                )}
               </div>
 
               <div className="space-y-3">

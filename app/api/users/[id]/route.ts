@@ -2,6 +2,36 @@ import { admin, adminAuth, adminDb } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth-helpers";
 
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    try {
+      await getSessionFromRequest(req);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { id } = await params;
+
+    const userDoc = await adminDb.collection("users").doc(id).get();
+    
+    if (!userDoc.exists) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      user: {
+        id: userDoc.id,
+        ...userDoc.data()
+      }
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching user:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
+  }
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
