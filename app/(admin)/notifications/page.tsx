@@ -2,6 +2,8 @@
 
 import { AlertCircle, Bell, CheckCircle2, Loader2, Send, Users, User as UserIcon } from "lucide-react";
 import { useState, useEffect } from "react";
+import { DispatchesTable } from "@/components/DispatchesTable";
+import Image from "next/image";
 
 interface User {
   id: string;
@@ -20,6 +22,7 @@ export default function NotificationsPage() {
   const [targetUserId, setTargetUserId] = useState<string>("");
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     if (mode === "direct" && users.length === 0) {
@@ -70,6 +73,7 @@ export default function NotificationsPage() {
         setStatus({ type: "success", message: mode === "broadcast" ? `Successfully sent to ${data.sent} devices!` : "Notification sent successfully!" });
         setTitle("");
         setBody("");
+        setRefreshTrigger(prev => prev + 1);
       } else {
         setStatus({ type: "error", message: data.error || "Failed to send notification." });
       }
@@ -190,18 +194,14 @@ export default function NotificationsPage() {
               Preview
             </h3>
             
-            <div className="bg-[#0a0a0a] rounded-3xl p-6 border border-white/10 shadow-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">H</span>
-                </div>
+            <div className="bg-[#0a0a0a5a] rounded-2xl p-4 border border-white/10 shadow-2xl">
+              <div className="flex items-center gap-3">
+                <Image src="/hest-thumbnail.png" alt="Hest" width={50} height={50} className="rounded-lg" />
                 <div>
-                  <p className="text-[10px] text-secondary uppercase tracking-widest font-bold">Hest App</p>
-                  <p className="text-[10px] text-secondary">Now</p>
+                  <h4 className="text-sm font-bold text-foreground">{title || "Notification Title"}</h4>
+                  <p className="text-xs text-secondary mt-1 leading-normal">{body || "Your message body will appear here..."}</p>
                 </div>
               </div>
-              <h4 className="text-sm font-bold text-foreground">{title || "Notification Title"}</h4>
-              <p className="text-xs text-secondary mt-1 leading-normal">{body || "Your message body will appear here..."}</p>
             </div>
           </div>
 
@@ -219,6 +219,10 @@ export default function NotificationsPage() {
           </div>
         </div>
       </div>
+
+      <hr className="border-white/5 my-8" />
+
+      <DispatchesTable refreshTrigger={refreshTrigger} />
     </div>
   );
 }

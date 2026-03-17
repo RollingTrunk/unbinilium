@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth-helpers";
+import { adminDb, admin } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
   try {
+    let session;
     try {
-      await getSessionFromRequest(req);
+      session = await getSessionFromRequest(req);
     } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -12,6 +14,17 @@ export async function POST(req: Request) {
 
     if (!userId || !title || !body) {
       return NextResponse.json({ error: "User ID, title, and body are required" }, { status: 400 });
+    }
+
+    // Fetch recipient email for logging
+    let recipientEmail = "Unknown";
+    try {
+      const userDoc = await adminDb.collection("users").doc(userId).get();
+      if (userDoc.exists) {
+        recipientEmail = userDoc.data()?.email || "Unknown";
+      }
+    } catch (e) {
+      console.error("Failed to fetch recipient email for logging:", e);
     }
 
     const relayUrl = process.env.RELAY_URL;
@@ -42,8 +55,26 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
+    // Log the notification dispatch to Firestore
+    try {
+      await adminDb.collection("notification_dispatches").add({
+        adminEmail: session.email,
+        adminUid: session.uid,
+        type: "direct",
+        recipientId: userId,
+        recipientEmail,
+        title,
+        body,
+        sentCount: data.sent || 0,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (logError) {
+      console.error("Failed to log notification dispatch:", logError);
+    }
+
     return NextResponse.json({ sent: data.sent || 0, message: "Direct notification successful" });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

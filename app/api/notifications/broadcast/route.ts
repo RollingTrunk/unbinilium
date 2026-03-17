@@ -1,11 +1,12 @@
-import { adminDb } from "@/lib/firebase-admin";
+import { adminDb, admin } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth-helpers";
 
 export async function POST(req: Request) {
   try {
+    let session;
     try {
-      await getSessionFromRequest(req);
+      session = await getSessionFromRequest(req);
     } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -51,8 +52,25 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
+    // Log the broadcast dispatch to Firestore
+    try {
+      await adminDb.collection("notification_dispatches").add({
+        adminEmail: session.email,
+        adminUid: session.uid,
+        type: "broadcast",
+        recipientId: null,
+        title,
+        body,
+        sentCount: data.sent || 0,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (logError) {
+      console.error("Failed to log broadcast dispatch:", logError);
+    }
+
     return NextResponse.json({ sent: data.sent || 0, message: "Broadcast successful" });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
