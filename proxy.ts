@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "./lib/auth-config";
 
 // Protect all routes except these
-const publicPaths = ["/login", "/api/auth/session"];
+const publicPaths = ["/login", "/api/auth/session", "/hest.png"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -41,6 +41,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)',
   ],
 };

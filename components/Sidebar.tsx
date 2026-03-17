@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -24,9 +25,7 @@ export default function Sidebar() {
   return (
     <aside className="w-64 glass h-screen fixed left-0 top-0 p-4 flex flex-col gap-8 transition-all duration-300">
       <div className="flex items-center gap-3 px-4 py-2">
-        <div className="w-8 h-8 bg-primary rounded-lg shadow-lg flex items-center justify-center">
-          <span className="text-white font-bold text-xl">H</span>
-        </div>
+        <Image src="/hest.png" alt="Hest Logo" className="rounded" width={32} height={32} />
         <h1 className="text-xl font-bold tracking-tight text-foreground">Hest Admin</h1>
       </div>
 

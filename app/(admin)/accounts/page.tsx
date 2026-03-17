@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 interface Account {
   id: string;
@@ -18,6 +19,7 @@ interface Account {
   createdAt?: { _seconds?: number; seconds?: number; nanoseconds?: number } | string | number | Date;
   status?: string;
   memberCount?: number;
+  members?: { id: string; name: string; email: string }[];
 }
 
 
@@ -272,19 +274,42 @@ function AccountsPageContent() {
               
               <div className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Household Stats</h3>
-                <div className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-400">
-                      <Users className="w-4 h-4" />
+                <div className="w-full p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-400">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-white">Account Members</div>
+                        <div className="text-xs text-gray-500">Users belonging to this household</div>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <div className="text-sm font-medium text-white">Account Members</div>
-                      <div className="text-xs text-gray-500">Users belonging to this household</div>
+                    <div className="text-xl font-bold text-white pr-2">
+                      {selectedAccount.memberCount !== undefined ? selectedAccount.memberCount : "-"}
                     </div>
                   </div>
-                  <div className="text-xl font-bold text-white pr-2">
-                    {selectedAccount.memberCount !== undefined ? selectedAccount.memberCount : "-"}
-                  </div>
+
+                  {selectedAccount.members && selectedAccount.members.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+                       <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Member List</h4>
+                       <div className="space-y-1">
+                         {selectedAccount.members.map(member => (
+                           <Link 
+                             key={member.id} 
+                             href={`/users?userId=${member.id}`}
+                             className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                           >
+                             <div className="flex flex-col">
+                               <span className="text-sm text-gray-300 group-hover:text-white transition-colors">{member.name}</span>
+                               <span className="text-[10px] text-gray-500">{member.email}</span>
+                             </div>
+                             <ChevronRight className="w-3 h-3 text-gray-600 group-hover:text-gray-400 transition-all transform group-hover:translate-x-0.5" />
+                           </Link>
+                         ))}
+                       </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

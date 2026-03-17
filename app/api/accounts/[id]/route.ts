@@ -20,15 +20,41 @@ export async function GET(
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
-    // Get count of members
-    const membersSnapshot = await adminDb.collection("accountMembers").where("accountId", "==", id).count().get();
-    const memberCount = membersSnapshot.data().count;
+    // Get members
+    const membersSnapshot = await adminDb.collection("accountMembers").where("accountId", "==", id).get();
+    const memberCount = membersSnapshot.size;
+    const memberIds = membersSnapshot.docs.map(doc => doc.data().userId);
+    
+    const members: { id: string; name: string; email: string }[] = [];
+    if (memberIds.length > 0) {
+      // Chunk memberIds because where-in is limited to 30 items
+      const chunks = [];
+      for (let i = 0; i < memberIds.length; i += 30) {
+        chunks.push(memberIds.slice(i, i + 30));
+      }
+
+      for (const chunk of chunks) {
+        const usersSnapshot = await adminDb.collection("users")
+          .where("__name__", "in", chunk)
+          .get();
+        
+        usersSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          members.push({
+            id: doc.id,
+            name: data.displayName || data.name || "Unknown User",
+            email: data.email || ""
+          });
+        });
+      }
+    }
 
     return NextResponse.json({
       account: {
         id: accountDoc.id,
         ...accountDoc.data(),
-        memberCount
+        memberCount,
+        members
       }
     });
   } catch (error: unknown) {
