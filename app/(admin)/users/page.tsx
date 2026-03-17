@@ -33,7 +33,7 @@ interface User {
   role?: "user" | "admin";
 }
 
-const projectId = process.env.NODE_ENV === "development" ? process.env.DEV_FIREBASE_PROJECT_ID : process.env.PROD_FIREBASE_PROJECT_ID;
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const webURL = `https://${projectId}.web.app`;
 
 

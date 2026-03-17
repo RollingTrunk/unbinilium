@@ -1,6 +1,6 @@
 import * as admin from "firebase-admin";
 
-const projectId = process.env.NODE_ENV === "development" ? process.env.DEV_FIREBASE_PROJECT_ID : process.env.PROD_FIREBASE_PROJECT_ID;
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const clientEmail = `firebase-adminsdk-fbsvc@${projectId}.iam.gserviceaccount.com`;
 const privateKey = process.env.NODE_ENV === "development" ? process.env.DEV_FIREBASE_PRIVATE_KEY : process.env.PROD_FIREBASE_PRIVATE_KEY;
 const serviceAccount = process.env.NODE_ENV === "development" ? process.env.DEV_FIREBASE_SERVICE_ACCOUNT : process.env.PROD_FIREBASE_SERVICE_ACCOUNT;
