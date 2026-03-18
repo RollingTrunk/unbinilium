@@ -20,6 +20,7 @@ interface Account {
   status?: string;
   memberCount?: number;
   members?: { id: string; name: string; email: string }[];
+  calendars?: { id: string; name: string; visibility: string; ownerId: string | null; isDefault: boolean; source: string }[];
 }
 
 
@@ -307,6 +308,52 @@ function AccountsPageContent() {
                              <ChevronRight className="w-3 h-3 text-gray-600 group-hover:text-gray-400 transition-all transform group-hover:translate-x-0.5" />
                            </Link>
                          ))}
+                       </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                        <Calendar className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-white">Connected Calendars</div>
+                        <div className="text-xs text-gray-500">Calendars synced by members</div>
+                      </div>
+                    </div>
+                    <div className="text-xl font-bold text-white pr-2">
+                       {selectedAccount.calendars ? selectedAccount.calendars.length : "-"}
+                    </div>
+                  </div>
+
+                  {selectedAccount.calendars && selectedAccount.calendars.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+                       <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Calendar List</h4>
+                       <div className="space-y-1">
+                         {selectedAccount.calendars.map(calendar => {
+                           const owner = calendar.ownerId ? selectedAccount.members?.find(m => m.id === calendar.ownerId) : null;
+                           return (
+                             <div key={calendar.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group">
+                               <div className="flex flex-col">
+                                 <span className="text-sm text-gray-300 group-hover:text-white transition-colors">{calendar.name}</span>
+                                 <div className="text-[10px] text-gray-500 mt-0.5 flex flex-wrap items-center gap-1">
+                                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${calendar.visibility === 'household' ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-500/10 text-gray-400'}`}>
+                                     {calendar.visibility === 'household' ? 'Household' : 'Private'}
+                                   </span>
+                                   {calendar.visibility !== 'household' && owner && (
+                                     <span>
+                                       by <Link href={`/users?userId=${owner.id}`} className="hover:text-white transition-colors underline decoration-white/30 underline-offset-2">{owner.name}</Link>
+                                     </span>
+                                   )}
+                                 </div>
+                               </div>
+                               <Calendar className="w-3 h-3 text-gray-600 group-hover:text-gray-400 transition-all" />
+                             </div>
+                           );
+                         })}
                        </div>
                     </div>
                   )}

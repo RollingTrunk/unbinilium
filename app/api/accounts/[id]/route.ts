@@ -49,12 +49,27 @@ export async function GET(
       }
     }
 
+    // Get calendars
+    const calendarsSnapshot = await adminDb.collection("calendars").where("accountId", "==", id).get();
+    const calendars = calendarsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name || "Unnamed Calendar",
+        visibility: data.visibility || "local",
+        ownerId: data.ownerId || null,
+        isDefault: data.isDefault || false,
+        source: data.source || "local"
+      };
+    });
+
     return NextResponse.json({
       account: {
         id: accountDoc.id,
         ...accountDoc.data(),
         memberCount,
-        members
+        members,
+        calendars
       }
     });
   } catch (error: unknown) {

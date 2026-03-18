@@ -20,10 +20,21 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    let lastLogin = userDoc.data()?.lastLogin;
+    try {
+      const authUser = await adminAuth.getUser(id);
+      if (authUser.metadata.lastSignInTime) {
+        lastLogin = authUser.metadata.lastSignInTime;
+      }
+    } catch (error) {
+      console.error("Failed to fetch auth user:", error);
+    }
+
     return NextResponse.json({
       user: {
         id: userDoc.id,
-        ...userDoc.data()
+        ...userDoc.data(),
+        lastLogin
       }
     });
   } catch (error: unknown) {

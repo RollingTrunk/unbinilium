@@ -53,8 +53,8 @@ export default function Sidebar() {
 
       <div className="px-4 py-2 mt-auto">
         <div className="glass rounded-xl p-4 text-xs text-secondary">
-          <p className="font-semibold text-foreground mb-1">Production</p>
-          <p>Connected to hest-server</p>
+          <p className="font-semibold text-foreground mb-1 capitalize">{process.env.NODE_ENV || "Live"}</p>
+          <p>Connected to {process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}</p>
         </div>
       </div>
     </aside>

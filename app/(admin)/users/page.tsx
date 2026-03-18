@@ -371,6 +371,12 @@ function UsersPageContent() {
                   <Calendar className="w-4 h-4" />
                   <span className="text-sm">Joined {formatDate(selectedUser.createdAt, "P")}</span>
                 </div>
+                {selectedUser.lastLogin && (
+                  <div className="flex items-center space-x-3 text-gray-400">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-sm">Last Active {formatDate(selectedUser.lastLogin, "P")}</span>
+                  </div>
+                )}
                 <div className="flex items-center space-x-3 text-gray-400">
                   <Shield className="w-4 h-4" />
                   <span className="text-sm uppercase font-bold text-xs tracking-wider">{selectedUser.id.substring(0, 12)}...</span>
