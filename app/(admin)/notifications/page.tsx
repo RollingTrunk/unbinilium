@@ -141,7 +141,12 @@ export default function NotificationsPage() {
           )}
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="title" className="text-sm font-medium text-foreground">Notification Title</label>
+            <div className="flex justify-between items-center">
+              <label htmlFor="title" className="text-sm font-medium text-foreground">Notification Title</label>
+              <span className={`text-[10px] font-mono ${title.length > 26 ? 'text-red-400' : 'text-secondary'}`}>
+                {title.length}/26
+              </span>
+            </div>
             <input
               id="title"
               type="text"
@@ -154,7 +159,12 @@ export default function NotificationsPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="body" className="text-sm font-medium text-foreground">Message Body</label>
+            <div className="flex justify-between items-center">
+              <label htmlFor="body" className="text-sm font-medium text-foreground">Message Body</label>
+              <span className={`text-[10px] font-mono ${body.length > 80 ? 'text-red-400' : 'text-secondary'}`}>
+                {body.length}/80
+              </span>
+            </div>
             <textarea
               id="body"
               value={body}
@@ -198,8 +208,12 @@ export default function NotificationsPage() {
               <div className="flex items-center gap-3">
                 <Image src="/hest-thumbnail.png" alt="Hest" width={50} height={50} className="rounded-lg" />
                 <div>
-                  <h4 className="text-sm font-bold text-foreground">{title || "Notification Title"}</h4>
-                  <p className="text-xs text-secondary mt-1 leading-normal">{body || "Your message body will appear here..."}</p>
+                  <h4 className="text-sm font-bold text-foreground">
+                    {title ? (title.length > 30 ? `${title.substring(0, 30)}...` : title) : "Notification Title"}
+                  </h4>
+                  <p className="text-xs text-secondary mt-1 leading-normal">
+                    {body ? (body.length > 80 ? `${body.substring(0, 80)}...` : body) : "Your message body will appear here..."}
+                  </p>
                 </div>
               </div>
             </div>
@@ -212,7 +226,7 @@ export default function NotificationsPage() {
             </h4>
             <ul className="text-xs text-secondary space-y-2 list-disc pl-4">
               <li>Notifications are sent to ALL registered devices.</li>
-              <li>Keep titles short and punchy (under 40 characters).</li>
+              <li>Keep titles short and punchy (under 26 characters).</li>
               <li>Avoid over-broadcasting to prevent user fatigue.</li>
               <li>Verify the content in the preview before sending.</li>
             </ul>
