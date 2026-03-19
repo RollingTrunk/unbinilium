@@ -1,10 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { User, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut as firebaseSignOut, signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
 import { useRouter } from "next/navigation";
-import { ALLOWED_DOMAINS } from "@/lib/auth-config";
+import { isAllowedEmail } from "@/lib/auth-config";
 
 interface AuthContextType {
   user: User | null;
@@ -37,11 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const sendLoginLink = async (email: string) => {
-    // Check email domain before even attempting sign-in
-    const domain = email.split("@")[1];
-    if (!ALLOWED_DOMAINS.includes(domain)) {
-      throw new Error("Unauthorized domain. Only @rollingtrunk.com and @hest.page accounts are allowed.");
+  const sendLoginLink = useCallback(async (email: string) => {
+    if (!isAllowedEmail(email)) {
+      throw new Error("Unauthorized domain. Please use the organization email address.");
     }
 
     // Save email in localStorage so we don't have to ask for it again
@@ -53,9 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     
     await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-  };
+  }, []);
 
-  const completeLogin = async (url: string) => {
+  const completeLogin = useCallback(async (url: string) => {
     if (!isSignInWithEmailLink(auth, url)) return;
 
     let email = window.localStorage.getItem('emailForSignIn');
@@ -69,24 +67,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.localStorage.removeItem('emailForSignIn');
     await exchangeTokenForSession(result.user);
     router.push("/");
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
-  const signInWithPassword = async (email: string, password: string) => {
-    const domain = email.split("@")[1];
-    if (!ALLOWED_DOMAINS.includes(domain)) {
-      throw new Error("Unauthorized domain. Only @rollingtrunk.com and @hest.page accounts are allowed.");
+  const signInWithPassword = useCallback(async (email: string, password: string) => {
+    if (!isAllowedEmail(email)) {
+      throw new Error("Unauthorized domain. Please use the organization email address.");
     }
 
     const result = await signInWithEmailAndPassword(auth, email, password);
     await exchangeTokenForSession(result.user);
     router.push("/");
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await firebaseSignOut(auth);
     await fetch("/api/auth/session", { method: "DELETE" });
     router.push("/login");
-  };
+  }, [router]);
 
   const exchangeTokenForSession = async (firebaseUser: User) => {
     const idToken = await firebaseUser.getIdToken();

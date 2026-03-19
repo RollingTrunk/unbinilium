@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/AuthContext";
 import { Mail, CheckCircle2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { isSignInWithEmailLink } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
 
@@ -16,9 +16,12 @@ export default function LoginPage() {
   const [emailSent, setEmailSent] = useState(false);
   const [verifyingLink, setVerifyingLink] = useState(false);
 
+  const hasAttemptedLogin = useRef(false);
+
   useEffect(() => {
     // Check if user is returning from an email link
-    if (isSignInWithEmailLink(auth, window.location.href)) {
+    if (isSignInWithEmailLink(auth, window.location.href) && !hasAttemptedLogin.current) {
+      hasAttemptedLogin.current = true;
       setVerifyingLink(true);
       completeLogin(window.location.href).catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Failed to complete sign-in from link.");

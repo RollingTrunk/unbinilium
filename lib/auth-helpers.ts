@@ -1,11 +1,9 @@
 import { adminAuth } from "@/lib/firebase-admin-auth";
-import { ALLOWED_DOMAINS, SESSION_COOKIE_NAME } from "./auth-config";
+import { SESSION_COOKIE_NAME, isAllowedEmail } from "./auth-config";
 
-export function isAllowedEmail(email: string | undefined | null): boolean {
-  if (!email) return false;
-  const domain = email.split("@")[1];
-  return ALLOWED_DOMAINS.includes(domain);
-}
+// Re-export for backwards compatibility — the implementation lives in auth-config.ts
+// so that Client Components can import it without pulling in firebase-admin.
+export { isAllowedEmail } from "./auth-config";
 
 export async function verifySession(cookieValue: string | undefined) {
   if (!cookieValue) {

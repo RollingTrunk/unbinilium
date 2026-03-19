@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     // Check if the user's email domain is allowed
     if (!isAllowedEmail(decodedIdToken.email)) {
       return NextResponse.json(
-        { error: "Unauthorized domain. Please use a @rollingtrunk.com or @hest.page email." },
+        { error: "Unauthorized domain. Please use the organization email address." },
         { status: 403 }
       );
     }
