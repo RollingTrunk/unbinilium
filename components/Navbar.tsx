@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, Search, User, LogOut, ChevronDown } from "lucide-react";
+import { Bell, Search, User, LogOut, ChevronDown, Menu } from "lucide-react";
 import { useAuth } from "@/components/AuthContext";
 
-export default function Navbar() {
+interface NavbarProps {
+  onMenuToggle: () => void;
+}
+
+export default function Navbar({ onMenuToggle }: NavbarProps) {
   const { user, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -25,9 +29,16 @@ export default function Navbar() {
   const displayEmail = user?.email ?? "admin";
 
   return (
-    <header className="h-16 glass sticky top-0 z-10 px-8 flex items-center justify-between">
-      <div className="flex-1 flex items-center gap-4 max-w-xl">
-        <div className="relative w-full group">
+    <header className="h-16 glass sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between">
+      <div className="flex items-center gap-4 flex-1 max-w-xl">
+        <button 
+          onClick={onMenuToggle}
+          className="md:hidden p-2 hover:bg-white/5 rounded-lg text-secondary"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
+        <div className="relative w-full group hidden sm:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary group-focus-within:text-primary transition-colors" />
           <input 
             type="text" 
@@ -37,27 +48,27 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-2 md:gap-6">
         <button className="relative text-secondary hover:text-foreground transition-colors p-2 rounded-lg hover:bg-white/5">
           <Bell className="w-5 h-5" />
           <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-background"></span>
         </button>
         
-        <div className="h-8 w-[1px] bg-white/10 mx-2"></div>
+        <div className="h-8 w-[1px] bg-white/10 mx-1 md:mx-2"></div>
 
         {/* Admin dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen((prev) => !prev)}
-            className="flex items-center gap-3 pl-2 cursor-pointer rounded-xl py-1.5 pr-2 hover:bg-white/5 transition-colors"
+            className="flex items-center gap-2 md:gap-3 pl-2 cursor-pointer rounded-xl py-1.5 pr-2 hover:bg-white/5 transition-colors"
           >
-            <div className="text-right">
+            <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-foreground leading-none">Admin User</p>
               <p className="text-[10px] text-secondary mt-1 max-w-[160px] truncate">{displayEmail}</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-accent p-[2px] shrink-0">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-tr from-primary to-accent p-[2px] shrink-0">
               <div className="w-full h-full rounded-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
-                <User className="w-6 h-6 text-white" />
+                <User className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
             </div>
             <ChevronDown

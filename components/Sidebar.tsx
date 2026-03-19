@@ -5,7 +5,8 @@ import {
     Building,
     Database,
     LayoutDashboard,
-    Users
+    Users,
+    X
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,14 +20,29 @@ const navigation = [
   { name: "Cleanup", href: "/cleanup", icon: Database },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 glass h-screen fixed left-0 top-0 p-4 flex flex-col gap-8 transition-all duration-300">
-      <div className="flex items-center gap-3 px-4 py-2">
-        <Image src="/hest.png" alt="Hest Logo" className="rounded" width={32} height={32} />
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Hest Admin</h1>
+    <aside className={`w-64 glass h-screen fixed left-0 top-0 p-4 flex flex-col gap-8 transition-all duration-300 z-40 
+      ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+    `}>
+      <div className="flex items-center justify-between px-4 py-2">
+        <div className="flex items-center gap-3">
+          <Image src="/hest.png" alt="Hest Logo" className="rounded" width={32} height={32} />
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Hest Admin</h1>
+        </div>
+        <button 
+          onClick={onClose}
+          className="md:hidden p-2 hover:bg-white/5 rounded-lg text-secondary"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       <nav className="flex-1 flex flex-col gap-2">
@@ -38,6 +54,7 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={onClose}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                 isActive 
                   ? "bg-primary text-white shadow-lg shadow-primary/20" 
