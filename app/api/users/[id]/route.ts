@@ -20,20 +20,29 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    let lastLogin = userDoc.data()?.lastLogin;
-    try {
-      const authUser = await adminAuth.getUser(id);
-      if (authUser.metadata.lastSignInTime) {
-        lastLogin = authUser.metadata.lastSignInTime;
+    const userData = userDoc.data()!;
+
+    // Prefer lastActive (heartbeat from app foreground, updated every 30 min)
+    // over Auth lastSignInTime (only updates on sign-in)
+    let lastActive = userData.lastActive ?? null;
+    let lastLogin = userData.lastLogin ?? null;
+
+    if (!lastActive) {
+      try {
+        const authUser = await adminAuth.getUser(id);
+        if (authUser.metadata.lastSignInTime) {
+          lastActive = authUser.metadata.lastSignInTime;
+        }
+      } catch (error) {
+        console.error("Failed to fetch auth user:", error);
       }
-    } catch (error) {
-      console.error("Failed to fetch auth user:", error);
     }
 
     return NextResponse.json({
       user: {
         id: userDoc.id,
-        ...userDoc.data(),
+        ...userData,
+        lastActive,
         lastLogin
       }
     }, {

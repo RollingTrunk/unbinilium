@@ -31,6 +31,7 @@ interface User {
   photoURL?: string;
   createdAt?: { _seconds?: number; seconds?: number; nanoseconds?: number } | string | number | Date;
   lastLogin?: { _seconds?: number; seconds?: number; nanoseconds?: number } | string | number | Date;
+  lastActive?: { _seconds?: number; seconds?: number; nanoseconds?: number } | string | number | Date;
   status?: "active" | "deactivated" | "inactive" | "deleted";
   role?: "user" | "admin";
 }
@@ -358,10 +359,10 @@ function UsersPageContent() {
                   <Calendar className="w-4 h-4" />
                   <span className="text-sm">Joined {formatDate(selectedUser.createdAt, "P")}</span>
                 </div>
-                {selectedUser.lastLogin && (
+                {(selectedUser.lastActive || selectedUser.lastLogin) && (
                   <div className="flex items-center space-x-3 text-gray-400">
                     <Calendar className="w-4 h-4" />
-                    <span className="text-sm">Last Active {formatDate(selectedUser.lastLogin, "P")}</span>
+                    <span className="text-sm">Last Active {formatDate(selectedUser.lastActive || selectedUser.lastLogin, "Pp")}</span>
                   </div>
                 )}
                 <div className="flex items-center space-x-3 text-gray-400">
