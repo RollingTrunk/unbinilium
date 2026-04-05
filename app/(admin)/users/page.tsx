@@ -83,13 +83,14 @@ function UsersPageContent() {
     fetcher
   );
 
-  const { data: accountData, isLoading: isLoadingAccount } = useSWR<{ account: AccountSummary }>(
+  const { data: accountData, isLoading: isLoadingAccount } = useSWR<{ account: AccountSummary; role: string }>(
     activeUserId ? `/api/users/${activeUserId}/account` : null,
     fetcher
   );
 
   const selectedUser = userData?.user || (localSelectedUser?.id === activeUserId ? localSelectedUser : null);
   const userAccount = accountData?.account;
+  const userRole = accountData?.role ?? null;
   const loadingDetails = (isLoadingUser && !selectedUser) || isLoadingAccount;
 
   const fetchUsers = async (pageIndex: number) => {
@@ -370,10 +371,21 @@ function UsersPageContent() {
                   <span className="text-sm uppercase font-bold text-xs tracking-wider">{selectedUser.id.substring(0, 12)}...</span>
                 </div>
                 {userAccount && (
-                  <Link href={`/accounts?accountId=${userAccount.id}`} className="flex items-center space-x-3 text-gray-400 hover:text-blue-400 transition-colors group">
-                    <Building className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-medium">{userAccount.name || "Unnamed Account"}</span>
-                  </Link>
+                  <div className="flex items-center space-x-3 text-gray-400">
+                    <Building className="w-4 h-4" />
+                    <Link href={`/accounts?accountId=${userAccount.id}`} className="text-sm font-medium hover:text-blue-400 transition-colors">
+                      {userAccount.name || "Unnamed Account"}
+                    </Link>
+                    {userRole && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        userRole === "admin" ? "bg-amber-500/20 text-amber-400" :
+                        userRole === "dependent" ? "bg-purple-500/20 text-purple-400" :
+                        "bg-blue-500/20 text-blue-400"
+                      }`}>
+                        {userRole}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
 

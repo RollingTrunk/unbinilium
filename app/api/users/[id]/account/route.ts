@@ -36,7 +36,8 @@ export async function GET(
       account: {
         id: accountDoc.id,
         ...accountDoc.data()
-      }
+      },
+      role: membersSnapshot.docs[0].data().role ?? "member"
     }, {
       headers: {
         'Cache-Control': 'private, max-age=60, stale-while-revalidate=300'
