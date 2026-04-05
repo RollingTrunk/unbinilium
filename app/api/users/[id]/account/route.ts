@@ -37,6 +37,10 @@ export async function GET(
         id: accountDoc.id,
         ...accountDoc.data()
       }
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=60, stale-while-revalidate=300'
+      }
     });
 
   } catch (error: unknown) {

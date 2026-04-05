@@ -14,14 +14,16 @@ export async function GET(
     }
     const { id } = await params;
 
-    const accountDoc = await adminDb.collection("accounts").doc(id).get();
+    const [accountDoc, membersSnapshot, calendarsSnapshot] = await Promise.all([
+      adminDb.collection("accounts").doc(id).get(),
+      adminDb.collection("accountMembers").where("accountId", "==", id).get(),
+      adminDb.collection("calendars").where("accountId", "==", id).get()
+    ]);
     
     if (!accountDoc.exists) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
-    // Get members
-    const membersSnapshot = await adminDb.collection("accountMembers").where("accountId", "==", id).get();
     const memberCount = membersSnapshot.size;
     const memberIds = membersSnapshot.docs.map(doc => doc.data().userId);
     
@@ -50,7 +52,6 @@ export async function GET(
     }
 
     // Get calendars
-    const calendarsSnapshot = await adminDb.collection("calendars").where("accountId", "==", id).get();
     const calendars = calendarsSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -70,6 +71,10 @@ export async function GET(
         memberCount,
         members,
         calendars
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=60, stale-while-revalidate=300'
       }
     });
   } catch (error: unknown) {

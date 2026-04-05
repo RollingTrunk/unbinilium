@@ -12,6 +12,8 @@ import {
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import useSWR from "swr";
+import { fetcher } from "@/lib/fetcher";
 
 interface Account {
   id: string;
@@ -22,7 +24,6 @@ interface Account {
   members?: { id: string; name: string; email: string }[];
   calendars?: { id: string; name: string; visibility: string; ownerId: string | null; isDefault: boolean; source: string }[];
 }
-
 
 export default function AccountsPage() {
   return (
@@ -39,8 +40,8 @@ function AccountsPageContent() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [localSelectedAccount, setLocalSelectedAccount] = useState<Account | null>(null);
+  const [activeAccountId, setActiveAccountId] = useState<string | null>(urlAccountId);
   
   // Pagination state
   const cursorsRef = useRef<(string | null)[]>([null]);
@@ -53,10 +54,18 @@ function AccountsPageContent() {
   }, []);
 
   useEffect(() => {
-    if (urlAccountId) {
-      fetchAccountDetails(urlAccountId);
+    if (urlAccountId && urlAccountId !== activeAccountId) {
+      setActiveAccountId(urlAccountId);
     }
   }, [urlAccountId]);
+
+  const { data: accountData, isLoading: isLoadingAccount } = useSWR<{account: Account}>(
+    activeAccountId ? `/api/accounts/${activeAccountId}` : null,
+    fetcher
+  );
+
+  const selectedAccount = accountData?.account || (localSelectedAccount?.id === activeAccountId ? localSelectedAccount : null);
+  const loadingDetails = isLoadingAccount && !(selectedAccount && selectedAccount.memberCount !== undefined);
 
   const fetchAccounts = async (pageIndex: number) => {
     setLoading(true);
@@ -82,28 +91,6 @@ function AccountsPageContent() {
     }
   };
 
-  const fetchAccountDetails = async (id: string, locallySelected?: Account) => {
-    setLoadingDetails(true);
-    if (locallySelected && locallySelected.memberCount !== undefined) {
-      setSelectedAccount(locallySelected);
-      setLoadingDetails(false);
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/accounts/${id}`);
-      const data = await res.json();
-        if (data.account) {
-          setSelectedAccount(data.account);
-          setAccounts(prev => prev.map(a => a.id === id ? data.account : a));
-        }
-    } catch (error) {
-      console.error("Failed to fetch account details", error);
-    } finally {
-      setLoadingDetails(false);
-    }
-  };
-
   const handleNextPage = () => {
     if (hasMore) {
       fetchAccounts(currentPage + 1);
@@ -117,10 +104,11 @@ function AccountsPageContent() {
   };
 
   const handleSelectAccount = (account: Account) => {
-    if (selectedAccount?.id === account.id) return;
+    if (activeAccountId === account.id) return;
     // Update URL without full reload
     window.history.replaceState(null, '', `?accountId=${account.id}`);
-    fetchAccountDetails(account.id, account);
+    setActiveAccountId(account.id);
+    setLocalSelectedAccount(account);
   };
 
   const filteredAccounts = accounts.filter(account => 

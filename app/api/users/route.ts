@@ -39,6 +39,10 @@ export async function GET(req: Request) {
       users,
       lastVisible,
       hasMore: users.length === limit
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=60, stale-while-revalidate=300'
+      }
     });
   } catch (error: unknown) {
     console.error("Error fetching users:", error);

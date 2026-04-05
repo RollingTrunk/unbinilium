@@ -20,6 +20,8 @@ import {
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import useSWR from "swr";
+import { fetcher } from "@/lib/fetcher";
 
 interface User {
   id: string;
@@ -33,9 +35,13 @@ interface User {
   role?: "user" | "admin";
 }
 
+interface AccountSummary {
+  id: string;
+  name?: string;
+}
+
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const webURL = `https://${projectId}.web.app`;
-
 
 export default function UsersPage() {
   return (
@@ -52,9 +58,8 @@ function UsersPageContent() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [userAccount, setUserAccount] = useState<{id: string, name?: string} | null>(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [localSelectedUser, setLocalSelectedUser] = useState<User | null>(null);
+  const [activeUserId, setActiveUserId] = useState<string | null>(urlUserId);
   
   // Pagination state
   const cursorsRef = useRef<(string | null)[]>([null]);
@@ -67,45 +72,24 @@ function UsersPageContent() {
   }, []);
 
   useEffect(() => {
-    if (urlUserId) {
-      fetchUserDetails(urlUserId);
+    if (urlUserId && urlUserId !== activeUserId) {
+      setActiveUserId(urlUserId);
     }
   }, [urlUserId]);
 
-  const fetchUserDetails = async (id: string, locallySelected?: User) => {
-    setLoadingDetails(true);
-    setUserAccount(null);
-    let user = locallySelected;
+  const { data: userData, isLoading: isLoadingUser, mutate: mutateUser } = useSWR<{user: User}>(
+    activeUserId ? `/api/users/${activeUserId}` : null,
+    fetcher
+  );
 
-    if (!user) {
-      try {
-        const res = await fetch(`/api/users/${id}`);
-        const data = await res.json();
-        if (data.user) {
-          user = data.user;
-          setSelectedUser(user!);
-        }
-      } catch (error) {
-        console.error("Failed to fetch user details", error);
-      }
-    }
+  const { data: accountData, isLoading: isLoadingAccount } = useSWR<{ account: AccountSummary }>(
+    activeUserId ? `/api/users/${activeUserId}/account` : null,
+    fetcher
+  );
 
-    if (user) {
-      try {
-        const res = await fetch(`/api/users/${id}/account`);
-        const data = await res.json();
-        if (data.account) {
-          setUserAccount(data.account);
-        } else {
-          setUserAccount(null);
-        }
-      } catch (error) {
-        console.error("Failed to fetch user account", error);
-        setUserAccount(null);
-      }
-    }
-    setLoadingDetails(false);
-  };
+  const selectedUser = userData?.user || (localSelectedUser?.id === activeUserId ? localSelectedUser : null);
+  const userAccount = accountData?.account;
+  const loadingDetails = (isLoadingUser && !selectedUser) || isLoadingAccount;
 
   const fetchUsers = async (pageIndex: number) => {
     setLoading(true);
@@ -156,8 +140,10 @@ function UsersPageContent() {
         body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
-        setSelectedUser({ ...selectedUser, status: newStatus });
-        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, status: newStatus } : u));
+        const nextStatus = newStatus as User["status"];
+        if (userData) mutateUser({ user: { ...selectedUser, status: nextStatus } }, false);
+        if (localSelectedUser?.id === selectedUser.id) setLocalSelectedUser({ ...localSelectedUser, status: nextStatus });
+        setUsers(users.map(u => u.id === selectedUser.id ? { ...u, status: nextStatus } : u));
       }
     } catch (error) {
       console.error("Failed to update user", error);
@@ -191,7 +177,8 @@ function UsersPageContent() {
       });
       if (res.ok) {
         setUsers(users.filter(u => u.id !== selectedUser.id));
-        setSelectedUser(null);
+        setActiveUserId(null);
+        setLocalSelectedUser(null);
       }
     } catch (error) {
       console.error("Failed to delete user", error);
@@ -268,10 +255,10 @@ function UsersPageContent() {
                       key={user.id} 
                       className={`hover:bg-white/5 transition-colors cursor-pointer ${selectedUser?.id === user.id ? 'bg-white/5' : ''}`}
                       onClick={() => {
-                        if (selectedUser?.id !== user.id) {
+                        if (activeUserId !== user.id) {
                           window.history.replaceState(null, '', `?userId=${user.id}`);
-                          setSelectedUser(user);
-                          fetchUserDetails(user.id, user);
+                          setActiveUserId(user.id);
+                          setLocalSelectedUser(user);
                         }
                       }}
                     >

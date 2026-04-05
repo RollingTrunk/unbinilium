@@ -36,6 +36,10 @@ export async function GET(
         ...userDoc.data(),
         lastLogin
       }
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=60, stale-while-revalidate=300'
+      }
     });
   } catch (error: unknown) {
     console.error("Error fetching user:", error);
