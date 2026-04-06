@@ -22,10 +22,11 @@ export async function GET(
 
     const userData = userDoc.data()!;
 
-    // Prefer lastActive (heartbeat from app foreground, updated every 30 min)
-    // over Auth lastSignInTime (only updates on sign-in)
+    // Resolve lastActive with fallback chain:
+    // 1. Firestore lastActive (heartbeat from app foreground, updated every 30 min)
+    // 2. Firebase Auth lastSignInTime (updates on sign-in, dependents won't have this)
+    // 3. Firestore updatedAt (last field change — catch-all for dependents)
     let lastActive = userData.lastActive ?? null;
-    let lastLogin = userData.lastLogin ?? null;
 
     if (!lastActive) {
       try {
@@ -33,9 +34,13 @@ export async function GET(
         if (authUser.metadata.lastSignInTime) {
           lastActive = authUser.metadata.lastSignInTime;
         }
-      } catch (error) {
-        console.error("Failed to fetch auth user:", error);
+      } catch {
+        // Dependents may not have an Auth record — this is expected
       }
+    }
+
+    if (!lastActive) {
+      lastActive = userData.updatedAt ?? null;
     }
 
     return NextResponse.json({
@@ -43,7 +48,6 @@ export async function GET(
         id: userDoc.id,
         ...userData,
         lastActive,
-        lastLogin
       }
     }, {
       headers: {

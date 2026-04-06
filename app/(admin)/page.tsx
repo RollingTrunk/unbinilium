@@ -1,14 +1,18 @@
 import {
   Activity,
-  AlertTriangle,
   Bell,
-  Database,
+  Clock,
   UserCheck,
   UserPlus,
   Users
 } from "lucide-react";
+import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
 
 import { admin, adminDb } from "@/lib/firebase-admin";
+import { toDate } from "@/lib/date-utils";
+
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const usersSnapshot = await adminDb.collection("users").get();
@@ -18,7 +22,7 @@ export default async function Home() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   
   const activeUsersSnapshot = await adminDb.collection("users")
-    .where("lastLogin", ">=", admin.firestore.Timestamp.fromDate(sevenDaysAgo))
+    .where("lastActive", ">=", admin.firestore.Timestamp.fromDate(sevenDaysAgo))
     .get();
   const activeThisWeek = activeUsersSnapshot.size;
 
@@ -26,6 +30,22 @@ export default async function Home() {
     .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(sevenDaysAgo))
     .get();
   const newUsers = newUsersSnapshot.size;
+
+  // Build recently active list from all users, sorted by lastActive → updatedAt
+  const recentlyActive = usersSnapshot.docs
+    .map((doc) => {
+      const data = doc.data();
+      const lastActive = toDate(data.lastActive) || toDate(data.updatedAt) || null;
+      return {
+        id: doc.id,
+        name: (data.name as string) || "Unknown",
+        email: (data.email as string) || "",
+        lastActive,
+      };
+    })
+    .filter((u) => u.lastActive !== null)
+    .sort((a, b) => b.lastActive!.getTime() - a.lastActive!.getTime())
+    .slice(0, 5);
 
   const stats = [
     { name: "Total Users", value: totalUsers.toLocaleString(), icon: Users, change: "Live", trend: "up" },
@@ -81,7 +101,7 @@ export default async function Home() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Weekly Review Broadcast Sent</p>
-                  <p className="text-xs text-secondary mt-1">To 1,842 recipients in "Hest Production"</p>
+                  <p className="text-xs text-secondary mt-1">To 1,842 recipients in &quot;Hest Production&quot;</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-secondary">2h ago</p>
@@ -92,19 +112,31 @@ export default async function Home() {
         </div>
 
         <div className="glass p-8 rounded-3xl">
-          <h3 className="text-xl font-bold flex items-center gap-2 mb-8">
-            <AlertTriangle className="w-5 h-5 text-accent" />
-            Quick Actions
+          <h3 className="text-xl font-bold flex items-center gap-2 mb-6">
+            <Clock className="w-5 h-5 text-primary" />
+            Recently Active
           </h3>
-          <div className="grid grid-cols-1 gap-4">
-            <button className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-white/5 bg-white/5 hover:bg-primary/10 hover:border-primary/20 transition-all group">
-              <Bell className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
-              <span className="font-semibold">Send Notification</span>
-            </button>
-            <button className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-white/5 bg-white/5 hover:bg-accent/10 hover:border-accent/20 transition-all group">
-              <Database className="w-8 h-8 text-accent group-hover:scale-110 transition-transform" />
-              <span className="font-semibold">Run Cleanup</span>
-            </button>
+          <div className="space-y-3">
+            {recentlyActive.map((user) => (
+              <Link
+                key={user.id}
+                href={`/users?userId=${user.id}`}
+                className="flex items-center gap-3 p-3 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors group"
+              >
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+                  {user.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
+                  <p className="text-xs text-secondary truncate">
+                    {formatDistanceToNow(user.lastActive!, { addSuffix: true })}
+                  </p>
+                </div>
+              </Link>
+            ))}
+            {recentlyActive.length === 0 && (
+              <p className="text-sm text-secondary text-center py-4">No activity data yet</p>
+            )}
           </div>
         </div>
       </div>
