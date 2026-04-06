@@ -1,7 +1,8 @@
 import {
-  Activity,
   Bell,
   Clock,
+  Send,
+  User,
   UserCheck,
   UserPlus,
   Users
@@ -20,7 +21,7 @@ export default async function Home() {
 
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  
+
   const activeUsersSnapshot = await adminDb.collection("users")
     .where("lastActive", ">=", admin.firestore.Timestamp.fromDate(sevenDaysAgo))
     .get();
@@ -30,6 +31,30 @@ export default async function Home() {
     .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(sevenDaysAgo))
     .get();
   const newUsers = newUsersSnapshot.size;
+
+  // Fetch recent notification dispatches
+  const dispatchesSnapshot = await adminDb.collection("notification_dispatches")
+    .orderBy("timestamp", "desc")
+    .limit(4)
+    .get();
+
+  const recentDispatches = dispatchesSnapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      type: (data.type as string) || "direct",
+      title: (data.title as string) || "Notification",
+      sentCount: (data.sentCount as number) || 0,
+      recipientEmail: (data.recipientEmail as string) || null,
+      timestamp: toDate(data.timestamp),
+    };
+  });
+
+  // Sum total push sent across all dispatches
+  const allDispatchesSnapshot = await adminDb.collection("notification_dispatches").get();
+  const totalPushSent = allDispatchesSnapshot.docs.reduce((sum, doc) => {
+    return sum + ((doc.data().sentCount as number) || 0);
+  }, 0);
 
   // Build recently active list from all users, sorted by lastActive → updatedAt
   const recentlyActive = usersSnapshot.docs
@@ -51,7 +76,7 @@ export default async function Home() {
     { name: "Total Users", value: totalUsers.toLocaleString(), icon: Users, change: "Live", trend: "up" },
     { name: "Active This Week", value: activeThisWeek.toLocaleString(), icon: UserCheck, change: "7 Days", trend: "up" },
     { name: "New Users", value: newUsers.toLocaleString(), icon: UserPlus, change: "7 Days", trend: "up" },
-    { name: "Push Sent", value: "N/A", icon: Bell, change: "--", trend: "up" },
+    { name: "Push Sent", value: totalPushSent.toLocaleString(), icon: Send, change: "All Time", trend: "up" },
   ];
 
   return (
@@ -87,27 +112,45 @@ export default async function Home() {
         <div className="lg:col-span-2 glass p-8 rounded-3xl">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-bold flex items-center gap-2">
-              <Activity className="w-5 h-5 text-primary" />
-              System Activity
+              <Bell className="w-5 h-5 text-primary" />
+              Recent Notifications
             </h3>
-            <button className="text-primary text-sm font-medium hover:underline">View All</button>
+            <Link href="/notifications" className="text-primary text-sm font-medium hover:underline">
+              View All
+            </Link>
           </div>
-          
-          <div className="space-y-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-primary" />
+
+          <div className="space-y-4">
+            {recentDispatches.length === 0 ? (
+              <p className="text-sm text-secondary text-center py-8">No notifications sent yet</p>
+            ) : (
+              recentDispatches.map((dispatch) => (
+                <div key={dispatch.id} className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 hover:bg-white/5 transition-colors">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${dispatch.type === "broadcast" ? "bg-accent/10" : "bg-primary/10"}`}>
+                    {dispatch.type === "broadcast" ? (
+                      <Users className="w-5 h-5 text-accent" />
+                    ) : (
+                      <User className="w-5 h-5 text-primary" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{dispatch.title}</p>
+                    <p className="text-xs text-secondary mt-1">
+                      {dispatch.type === "broadcast"
+                        ? `Broadcast to ${dispatch.sentCount} recipients`
+                        : `Sent to ${dispatch.recipientEmail || "1 recipient"}`}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-secondary">
+                      {dispatch.timestamp
+                        ? formatDistanceToNow(dispatch.timestamp, { addSuffix: true })
+                        : "Unknown"}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Weekly Review Broadcast Sent</p>
-                  <p className="text-xs text-secondary mt-1">To 1,842 recipients in &quot;Hest Production&quot;</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-secondary">2h ago</p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

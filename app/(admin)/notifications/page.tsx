@@ -85,7 +85,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col gap-8">
+    <div className="max-w-7xl mx-auto flex flex-col gap-8">
       <div>
         <h2 className="text-3xl font-bold tracking-tight text-foreground">Push Notifications</h2>
         <p className="text-secondary mt-2">Broadcast messages to all Hest users via the Relay API.</p>

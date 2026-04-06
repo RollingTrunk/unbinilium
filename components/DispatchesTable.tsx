@@ -112,7 +112,7 @@ export function DispatchesTable({ refreshTrigger = 0 }: { refreshTrigger?: numbe
                       className={`hover:bg-white/5 transition-colors cursor-pointer ${expandedId === dispatch.id ? "bg-white/5" : ""}`}
                       onClick={() => toggleExpand(dispatch.id)}
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-foreground">
                             {formatDate(dispatch.timestamp, "MMM d, h:mm a")}
