@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, Search, User, LogOut, ChevronDown, Menu } from "lucide-react";
+import { Search, Settings, User, LogOut, ChevronDown, Menu } from "lucide-react";
 import { useAuth } from "@/components/AuthContext";
+import Link from "next/link";
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -49,10 +50,9 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       </div>
 
       <div className="flex items-center gap-2 md:gap-6">
-        <button className="relative text-secondary hover:text-foreground transition-colors p-2 rounded-lg hover:bg-white/5">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-background"></span>
-        </button>
+        <Link href="/settings" className="relative text-secondary hover:text-foreground transition-colors p-2 rounded-lg hover:bg-white/5">
+          <Settings className="w-5 h-5" />
+        </Link>
         
         <div className="h-8 w-[1px] bg-white/10 mx-1 md:mx-2"></div>
 

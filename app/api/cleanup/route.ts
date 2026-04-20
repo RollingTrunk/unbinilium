@@ -1,6 +1,7 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth-helpers";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 export async function GET(req: Request) {
   try {
@@ -43,8 +44,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    let session;
     try {
-      await getSessionFromRequest(req);
+      session = await getSessionFromRequest(req);
     } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -70,6 +72,12 @@ export async function POST(req: Request) {
     await deleteOrphaned("records");
     await deleteOrphaned("tasks");
     await deleteOrphaned("calendarEvents");
+
+    await logAuditEvent({
+      action: "cleanup.executed",
+      performedBy: session.email || "unknown",
+      details: { cleanedCount: count },
+    });
 
     return NextResponse.json({ success: true, cleanedCount: count });
   } catch (error: any) {

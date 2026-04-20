@@ -59,7 +59,7 @@ export default function SettingsPage() {
     }
   };
 
-  const updateSetting = (key: keyof typeof settings, value: any) => {
+  const updateSetting = (key: keyof typeof settings, value: string | boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -103,7 +103,7 @@ export default function SettingsPage() {
                   autoComplete="off"
                   value={settings.relaySecretKey} 
                   onChange={(e) => updateSetting("relaySecretKey", e.target.value)}
-                  placeholder={(settings as any).hasSecret ? "••••••••••••••••••••••••••••" : "Enter secret key..."}
+                  placeholder={(settings as Record<string, unknown>).hasSecret ? "••••••••••••••••••••••••••••" : "Enter secret key..."}
                   className="w-full bg-white/5 border border-white/5 rounded-xl py-2 px-4 text-white font-mono text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white/10"
                 />
               </div>

@@ -1,6 +1,7 @@
 import { admin, adminAuth, adminDb } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth-helpers";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 export async function GET(
   req: Request,
@@ -65,8 +66,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    let session;
     try {
-      await getSessionFromRequest(req);
+      session = await getSessionFromRequest(req);
     } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -76,9 +78,11 @@ export async function PATCH(
     if (status === "deactivated") {
       await adminAuth.updateUser(id, { disabled: true });
       await adminDb.collection("users").doc(id).update({ status: "deactivated" });
+      await logAuditEvent({ action: "user.deactivated", performedBy: session.email || "unknown", targetId: id });
     } else if (status === "active") {
       await adminAuth.updateUser(id, { disabled: false });
       await adminDb.collection("users").doc(id).update({ status: "active" });
+      await logAuditEvent({ action: "user.reactivated", performedBy: session.email || "unknown", targetId: id });
     }
 
     return NextResponse.json({ success: true });
@@ -104,8 +108,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    let session;
     try {
-      await getSessionFromRequest(req);
+      session = await getSessionFromRequest(req);
     } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -125,6 +130,8 @@ export async function DELETE(
 
     // Delete from Auth
     await adminAuth.deleteUser(id);
+
+    await logAuditEvent({ action: "user.deleted", performedBy: session.email || "unknown", targetId: id });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

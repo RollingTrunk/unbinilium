@@ -5,6 +5,7 @@ import {
     Building,
     Database,
     LayoutDashboard,
+    ShieldCheck,
     Users,
     X
 } from "lucide-react";
@@ -16,6 +17,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Users", href: "/users", icon: Users },
   { name: "Accounts", href: "/accounts", icon: Building },
+  { name: "Security", href: "/security", icon: ShieldCheck },
   { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Cleanup", href: "/cleanup", icon: Database },
 ];
