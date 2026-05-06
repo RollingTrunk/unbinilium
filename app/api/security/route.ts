@@ -100,9 +100,13 @@ export async function GET(req: Request) {
       timestamp: d.data().timestamp?.toDate?.()?.toISOString?.() ?? null,
     }));
 
-    // Blocked domains
-    const blockedDoc = await adminDb.collection("appConfig").doc("blockedDomains").get();
-    const blockedDomains: string[] = blockedDoc.exists ? (blockedDoc.data()?.domains ?? []) : [];
+    // Blocked domains & emails
+    const [blockedDomainsDoc, blockedEmailsDoc] = await Promise.all([
+      adminDb.collection("appConfig").doc("blockedDomains").get(),
+      adminDb.collection("appConfig").doc("blockedEmails").get(),
+    ]);
+    const blockedDomains: string[] = blockedDomainsDoc.exists ? (blockedDomainsDoc.data()?.domains ?? []) : [];
+    const blockedEmails: string[] = blockedEmailsDoc.exists ? (blockedEmailsDoc.data()?.emails ?? []) : [];
 
     return NextResponse.json({
       unverifiedUsers,
@@ -111,6 +115,7 @@ export async function GET(req: Request) {
       signupsByDay,
       recentAuditEvents,
       blockedDomains,
+      blockedEmails,
     });
   } catch (error: unknown) {
     console.error("Error fetching security metrics:", error);

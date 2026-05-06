@@ -6,6 +6,7 @@ import {
   Clock,
   Eye,
   KeyRound,
+  Mail,
   Plus,
   RefreshCw,
   Save,
@@ -47,6 +48,7 @@ interface SecurityMetrics {
   signupsByDay: Record<string, number>;
   recentAuditEvents: AuditEvent[];
   blockedDomains: string[];
+  blockedEmails: string[];
 }
 
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
@@ -66,6 +68,11 @@ export default function SecurityPage() {
   const [newDomain, setNewDomain] = useState("");
   const [domainsSaving, setDomainsSaving] = useState(false);
 
+  // Blocked emails local state
+  const [blockedEmails, setBlockedEmails] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailsSaving, setEmailsSaving] = useState(false);
+
   const fetchMetrics = async () => {
     setLoading(true);
     try {
@@ -73,6 +80,7 @@ export default function SecurityPage() {
       const data = await res.json();
       setMetrics(data);
       setBlockedDomains(data.blockedDomains || []);
+      setBlockedEmails(data.blockedEmails || []);
     } catch (error) {
       console.error("Failed to fetch security metrics:", error);
     } finally {
@@ -117,6 +125,42 @@ export default function SecurityPage() {
       alert("Error saving blocklist.");
     } finally {
       setDomainsSaving(false);
+    }
+  };
+
+  const handleAddEmail = () => {
+    const email = newEmail.toLowerCase().trim();
+    if (!email || !email.includes("@") || blockedEmails.includes(email)) {
+      setNewEmail("");
+      return;
+    }
+    setBlockedEmails(prev => [...prev, email].sort());
+    setNewEmail("");
+  };
+
+  const handleRemoveEmail = (email: string) => {
+    setBlockedEmails(prev => prev.filter(e => e !== email));
+  };
+
+  const handleSaveEmails = async () => {
+    setEmailsSaving(true);
+    try {
+      const res = await fetch("/api/settings/blocked-emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emails: blockedEmails }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Blocklist saved (${data.count} emails).`);
+      } else {
+        alert("Failed to save email blocklist.");
+      }
+    } catch (error) {
+      console.error("Failed to save email blocklist:", error);
+      alert("Error saving email blocklist.");
+    } finally {
+      setEmailsSaving(false);
     }
   };
 
@@ -320,6 +364,77 @@ export default function SecurityPage() {
             >
               <Save className="w-4 h-4" />
               <span>{domainsSaving ? "Saving..." : "Save Blocklist"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Blocked Email Addresses */}
+        <div className="glass-panel rounded-3xl border border-white/10 p-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white flex items-center space-x-2">
+              <Mail className="w-5 h-5 text-orange-400" />
+              <span>Blocked Emails</span>
+            </h2>
+            <span className="text-xs text-gray-500 bg-white/5 px-3 py-1 rounded-full">
+              {blockedEmails.length} email{blockedEmails.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <p className="text-xs text-gray-600 mb-4">
+            Specific email addresses blocked from signup, regardless of domain.
+          </p>
+
+          <div className="flex space-x-2 mb-4">
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddEmail()}
+              placeholder="e.g. spammer@gmail.com"
+              className="flex-1 bg-white/5 border border-white/5 rounded-xl py-2 px-4 text-white font-mono text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white/10"
+            />
+            <button
+              onClick={handleAddEmail}
+              disabled={!newEmail.trim()}
+              className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 transition-all disabled:opacity-30 flex items-center space-x-1"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="text-sm">Add</span>
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="h-24 bg-white/5 rounded-xl animate-pulse" />
+          ) : blockedEmails.length === 0 ? (
+            <div className="text-center py-6 text-gray-600 text-sm">
+              No blocked email addresses yet.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-1">
+              {blockedEmails.map((email) => (
+                <span
+                  key={email}
+                  className="inline-flex items-center space-x-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-mono px-3 py-1.5 rounded-lg"
+                >
+                  <span>{email}</span>
+                  <button
+                    onClick={() => handleRemoveEmail(email)}
+                    className="opacity-50 hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={handleSaveEmails}
+              disabled={emailsSaving || loading}
+              className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-sm font-bold transition-all flex items-center space-x-2 disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              <span>{emailsSaving ? "Saving..." : "Save Blocklist"}</span>
             </button>
           </div>
         </div>
